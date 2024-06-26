@@ -1,2 +1,1 @@
-# CVA5_PLIC
-Priority Level Interrupt Controller for CVA5 CPU. Tested on Litex.
+replace these files with the original in the litex repo.
