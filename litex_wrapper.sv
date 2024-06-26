@@ -220,7 +220,7 @@ module litex_wrapper
         INCLUDE_S_MODE : 1,
         INCLUDE_U_MODE : 0,
         INCLUDE_UNIT : '{
-            FPU: 1,
+            FPU: 0,
             ALU : 1,
             LS : 1,
             MUL : 1,
@@ -229,6 +229,10 @@ module litex_wrapper
             CUSTOM : 0,
             BR : 1,
             IEC : 1
+        },
+        AMO_UNIT : '{
+            LR_WAIT : 8,
+            RESERVATION_WORDS : 8
         },
         INCLUDE_IFENCE : 1,
         INCLUDE_AMO : 1,
@@ -250,10 +254,10 @@ module litex_wrapper
         },
         //Memory Options
 
-        AMO_UNIT: '{
-            LR_WAIT: 8,
-            RESERVATION_WORDS : 4
-        },
+        // AMO_UNIT: '{
+        //     LR_WAIT: 8,
+        //     RESERVATION_WORDS : 4
+        // },
 
 
 
@@ -266,7 +270,7 @@ module litex_wrapper
         },
         ICACHE : '{
             LINES : 512,
-            LINE_W : 4,
+            LINE_W : 8,
             WAYS : 2,
             USE_EXTERNAL_INVALIDATIONS : 0,
             USE_NON_CACHEABLE : 0,
@@ -286,7 +290,7 @@ module litex_wrapper
         },
         DCACHE : '{
             LINES : 512,
-            LINE_W : 4,
+            LINE_W : 8,
             WAYS : 2,
             USE_EXTERNAL_INVALIDATIONS : 0,
             USE_NON_CACHEABLE : 1,
