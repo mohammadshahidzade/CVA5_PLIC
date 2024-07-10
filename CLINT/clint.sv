@@ -205,7 +205,7 @@ module clint #(
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
             mtime_q    <= 64'b0;
-            mtimecmp_q <= 64'h00000000FFFFFFFF;
+            mtimecmp_q <= 64'hFFFFFFFFFFFFFFFF;
             msip_q     <= '0;
         end else begin
             mtime_q    <= mtime_n;
