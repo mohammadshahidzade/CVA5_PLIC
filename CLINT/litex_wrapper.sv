@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Eric Matthews,  Lesley Shannon
+ * Copyright Â© 2022 Eric Matthews,  Lesley Shannon
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,8 @@
 
 module litex_wrapper
     import cva5_config::*;
-    import l2_config_and_types::*;
-    import riscv_types::*;
     import cva5_types::*;
+    import l2_config_and_types::*;
 
     #(
         parameter  LITEX_VARIANT = 0,
@@ -41,8 +40,7 @@ module litex_wrapper
         input logic cpu_s_interrupt,
         input logic cpu_software_in,
         input logic cpu_timer_in,
-        input logic [63:0] clint_time,
-
+        input logic [63:0] mtime,
         output logic [29:0] ibus_adr,
         output logic [31:0] ibus_dat_w,
         output logic [3:0] ibus_sel,
@@ -88,51 +86,42 @@ module litex_wrapper
     };
 
     localparam cpu_config_t MINIMAL_CONFIG = '{
-        
-        // bit: 0,
-        INCLUDE_CBO: 0,
-        
         //ISA options
-        INCLUDE_M_MODE : 1,
-        INCLUDE_S_MODE : 1,
-        INCLUDE_U_MODE : 0,
+        MODES : M,
         INCLUDE_UNIT : '{
-            // bit: 0,
-            FPU: 1,
             ALU : 1,
             LS : 1,
             MUL : 0,
             DIV : 0,
             CSR : 1,
+            FPU : 0,
             CUSTOM : 0,
             BR : 1,
             IEC : 1
         },
-        INCLUDE_IFENCE : 1,
-        INCLUDE_AMO : 1,
+        INCLUDE_IFENCE : 0,
+        INCLUDE_AMO : 0,
+        INCLUDE_CBO : 0,
         //CSR constants
         CSRS : '{
             MACHINE_IMPLEMENTATION_ID : 0,
             CPU_ID : 0,
             RESET_VEC : RESET_VEC,
-            RESET_MTVEC : 32'h00000000,
-            NON_STANDARD_OPTIONS : '{
-                COUNTER_W : 33,
-                MCYCLE_WRITEABLE : 0,
-                MINSTR_WRITEABLE : 0,
-                MTVEC_WRITEABLE : 1,
-                INCLUDE_MSCRATCH : 0,
-                INCLUDE_MCAUSE : 1,
-                INCLUDE_MTVAL : 1
-            }
+            RESET_TVEC : 32'h00000000,
+            MCONFIGPTR : '0,
+            INCLUDE_SSTC : 0,
+            INCLUDE_ZIHPM : 1,
+            INCLUDE_ZICNTR : 1,
+            INCLUDE_SMSTATEEN : 1
+
         },
         //Memory Options
-         AMO_UNIT: '{
-            LR_WAIT: 8,
-            RESERVATION_WORDS : 4
-        },
         SQ_DEPTH : 2,
         INCLUDE_FORWARDING_TO_STORES : 0,
+        AMO_UNIT : '{
+            LR_WAIT : 8,
+            RESERVATION_WORDS : 8
+        },
         INCLUDE_ICACHE : 0,
         ICACHE_ADDR : '{
             L: 32'h40000000,
@@ -214,58 +203,42 @@ module litex_wrapper
     };
 
     localparam cpu_config_t STANDARD_CONFIG = '{
-        
-        // bit: 0,
-        INCLUDE_CBO: 0,
-
         //ISA options
-        INCLUDE_M_MODE : 1,
-        INCLUDE_S_MODE : 1,
-        INCLUDE_U_MODE : 0,
+        MODES : MSU,
         INCLUDE_UNIT : '{
-            FPU: 0,
             ALU : 1,
             LS : 1,
             MUL : 1,
             DIV : 1,
             CSR : 1,
+            FPU : 0,
             CUSTOM : 0,
             BR : 1,
             IEC : 1
         },
-        AMO_UNIT : '{
-            LR_WAIT : 8,
-            RESERVATION_WORDS : 8
-        },
         INCLUDE_IFENCE : 1,
         INCLUDE_AMO : 1,
+        INCLUDE_CBO : 0,
+
         //CSR constants
         CSRS : '{
             MACHINE_IMPLEMENTATION_ID : 0,
             CPU_ID : 0,
             RESET_VEC : RESET_VEC,
-            RESET_MTVEC : 32'h00000000,
-            NON_STANDARD_OPTIONS : '{
-                COUNTER_W : 33,
-                MCYCLE_WRITEABLE : 0,
-                MINSTR_WRITEABLE : 0,
-                MTVEC_WRITEABLE : 1,
-                INCLUDE_MSCRATCH : 1,
-                INCLUDE_MCAUSE : 1,
-                INCLUDE_MTVAL : 1
-            }
+            RESET_TVEC : 32'h00000000,
+            MCONFIGPTR : '0,
+            INCLUDE_ZICNTR : 1,
+	    INCLUDE_ZIHPM : 1,
+	    INCLUDE_SSTC : 1,
+            INCLUDE_SMSTATEEN : 1
         },
         //Memory Options
-
-        // AMO_UNIT: '{
-        //     LR_WAIT: 8,
-        //     RESERVATION_WORDS : 4
-        // },
-
-
-
         SQ_DEPTH : 4,
         INCLUDE_FORWARDING_TO_STORES : 1,
+        AMO_UNIT : '{
+            LR_WAIT : 8,
+            RESERVATION_WORDS : 8
+        },
         INCLUDE_ICACHE : 1,
         ICACHE_ADDR : '{
             L : 32'h00000000, 
@@ -372,6 +345,7 @@ module litex_wrapper
     assign m_interrupt.software = cpu_software_in;
     assign m_interrupt.timer = cpu_timer_in;
     assign m_interrupt.external = cpu_m_interrupt;
+    // logic [63:0] mtime;
 
     cva5 #(.CONFIG(LITEX_CONFIG)) cpu(.*);
 
@@ -413,77 +387,6 @@ module litex_wrapper
         assign dwishbone.ack = dbus_ack;
         assign dwishbone.err = dbus_err;
     end endgenerate
-//    logic [31:0] sp_register;
-//    logic [31:0] t0_register;
-//    logic [31:0] t1_register;
-//    logic [31:0] t2_register;
-//    logic [31:0] t3_register;
-//    logic [31:0] t4_register;
-//    logic [31:0] t5_register;
-//    logic [31:0] t6_register;
 
-
-//    logic [31:0] s0_register;
-//    logic [31:0] s1_register;
-//    logic [31:0] s2_register;
-//    logic [31:0] s3_register;
-//    logic [31:0] s4_register;
-//    logic [31:0] s5_register;
-//    logic [31:0] s6_register;
-
-//    logic [31:0] a0_register;
-//    logic [31:0] a1_register;
-//    logic [31:0] a2_register;
-//    logic [31:0] a3_register;
-//    logic [31:0] a4_register;
-//    logic [31:0] a5_register;
-//    logic [31:0] a6_register;
-//    logic [31:0] a7_register;
-//    logic [31:0][31:0] sim_registers_unamed_groups[EXAMPLE_CONFIG.NUM_WB_GROUPS];
-//    logic [31:0][31:0] sim_registers_unamed;
-//    simulation_named_regfile sim_register;
-//    typedef struct packed{
-//        phys_addr_t phys_addr;
-//        logic [$clog2(EXAMPLE_CONFIG.NUM_WB_GROUPS)-1:0] wb_group;
-//    } spec_table_t;
-//    spec_table_t translation [32];
-//    genvar i, j;
-//    generate  for (i = 0; i < 32; i++) begin : gen_reg_file_sim
-//        for (j = 0; j < EXAMPLE_CONFIG.NUM_WB_GROUPS; j++) begin
-//            if (FPGA_VENDOR == XILINX) begin
-//                assign translation[i] = cpu.renamer_block.spec_table_ram.xilinx_gen.ram[i];
-//                assign sim_registers_unamed_groups[j][i] = 
-//                cpu.register_file_block.register_file_gen[j].register_file_bank.xilinx_gen.ram[translation[i].phys_addr];
-//            end
-//        end
-//        assign sim_registers_unamed[31-i] = sim_registers_unamed_groups[translation[i].wb_group][i];
-//    end
-//    endgenerate
-//    assign sp_register = sim_registers_unamed[29];
-//    assign t6_register = sim_registers_unamed[0];
-//    assign t5_register = sim_registers_unamed[1];
-//    assign t4_register = sim_registers_unamed[2];
-//    assign t3_register = sim_registers_unamed[3];
-//    assign t2_register = sim_registers_unamed[24];
-//    assign t1_register = sim_registers_unamed[25];
-//    assign t0_register = sim_registers_unamed[26];
-
-//    assign a7_register = sim_registers_unamed[14];
-//    assign a6_register = sim_registers_unamed[15];
-//    assign a5_register = sim_registers_unamed[16];
-//    assign a4_register = sim_registers_unamed[17];
-//    assign a3_register = sim_registers_unamed[18];
-//    assign a2_register = sim_registers_unamed[19];
-//    assign a1_register = sim_registers_unamed[20];
-//    assign a0_register = sim_registers_unamed[21];
-
-
-//    assign s1_register = sim_registers_unamed[22];
-//    assign s0_register = sim_registers_unamed[23];
-//    assign s2_register = sim_registers_unamed[13];
-//    assign s3_register = sim_registers_unamed[12];
-//    assign s4_register = sim_registers_unamed[11];
-//    assign s5_register = sim_registers_unamed[10];
-//    assign s6_register = sim_registers_unamed[9];
 
 endmodule
