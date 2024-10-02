@@ -10,11 +10,11 @@ module wishbone_plic_top #(
 (
   input                         clk,
   input                         reset,
-  input wire wb_cyc,
-  input wire wb_stb,
-  input wire wb_we,
-  input wire [PADDR_SIZE-1:0] wb_adr,
-  input wire [PDATA_SIZE-1:0] wb_dat_i,
+  input logic wb_cyc,
+  input logic wb_stb,
+  input logic wb_we,
+  input logic [PADDR_SIZE-1:0] wb_adr,
+  input logic [PDATA_SIZE-1:0] wb_dat_i,
   output reg [PDATA_SIZE-1:0] wb_dat_o,
   output reg wb_ack,
 
@@ -27,8 +27,8 @@ module wishbone_plic_top #(
     localparam IDLE = 3'b000, ACCESS = 3'b001, RESET = 3'b010, ACCESS_DELAY = 3'b011;
     localparam NUM_MODE = 3;
     localparam int IE_SOURCES = (TARGETS*32);//log(targets)+5
-    wire [NUM_MODE-1:0] module_select;
-    wire [19:0] output_address;
+    logic [NUM_MODE-1:0] module_select;
+    logic [19:0] output_address;
 
     AddressDecoder #(PADDR_SIZE, NUM_MODE) decoder_inst (
         .address(wb_adr),
@@ -36,7 +36,7 @@ module wishbone_plic_top #(
         .output_address(output_address)
     );
 
-    always @(posedge clk) begin
+    always_ff @(posedge clk) begin
         if (reset) begin
             state <= RESET;
         end else begin
@@ -55,11 +55,6 @@ module wishbone_plic_top #(
         end
         ACCESS: begin
             next_state = ACCESS_DELAY;
-            // if (~wb_cyc) begin
-            //     next_state = IDLE;
-            // end else if(wb_stb) begin
-            //     next_state = ACCESS;
-            // end
         end
         ACCESS_DELAY: begin
             next_state = IDLE;
@@ -73,7 +68,7 @@ module wishbone_plic_top #(
     endcase
     end
 
-    always @(posedge clk) begin
+    always_ff @(posedge clk) begin
         if (reset) begin
             wb_ack <= 1'b0;
         end else begin
@@ -101,53 +96,44 @@ module wishbone_plic_top #(
     reg [SOURCES-1:0] claim_request ;//Interrupt Claim Request
     reg [REGLENGHT-1:0] IP [31:0];//Interrupt Pending for each source
     reg [REGLENGHT-1:0] IPR [SOURCES-1:0];//Interrupt PRoirities for each source
-    wire [REGLENGHT-1:0] IP_PR [SOURCES-1:0];//AND of IP and IPR for each source
-    wire [REGLENGHT-1:0] IP_PR_IE [SOURCES-1:0] [TARGETS-1:0];//AND of IP and IPR and IE for each source
-    wire [REGLENGHT-1:0] MUX_PR [SOURCES-1:0] [TARGETS-1:0];//AND of IP and IPR and IE for each source
-    wire [REGLENGHT-1:0] MUX_ID [SOURCES-1:0] [TARGETS-1:0];//AND of IP and IPR and IE for each source
-    wire [REGLENGHT-1:0] MUX_SEL [SOURCES-1:0] [TARGETS-1:0];//AND of IP and IPR and IE for each source
+    logic [REGLENGHT-1:0] IP_PR [SOURCES-1:0];//AND of IP and IPR for each source
+    logic [REGLENGHT-1:0] IP_PR_IE [SOURCES-1:0] [TARGETS-1:0];//AND of IP and IPR and IE for each source
+    logic [REGLENGHT-1:0] MUX_PR [SOURCES-1:0] [TARGETS-1:0];//AND of IP and IPR and IE for each source
+    logic [REGLENGHT-1:0] MUX_ID [SOURCES-1:0] [TARGETS-1:0];//AND of IP and IPR and IE for each source
+    logic [REGLENGHT-1:0] MUX_SEL [SOURCES-1:0] [TARGETS-1:0];//AND of IP and IPR and IE for each source
     reg  [REGLENGHT-1:0] IE [IE_SOURCES-1:0];//Interrupt Enable for each target
-    wire [REGLENGHT-1:0] ID [TARGETS-1:0];//Interrupt ID for the maximum priority peding interrupt
+    logic [REGLENGHT-1:0] ID [TARGETS-1:0];//Interrupt ID for the maximum priority peding interrupt
     reg [REGLENGHT-1:0] CLAIM_COMPLETE [TARGETS-1:0];//Interrupt Claim
     reg [REGLENGHT-1:0] THRESHOLD [TARGETS-1:0];//Interrupt Complete
-    wire [REGLENGHT-1:0] MAX_ID_TARGETS [TARGETS-1:0];//Maximum ID that is enabled
-    wire [REGLENGHT-1:0] MAX_PR_TARGETS [TARGETS-1:0];//Maximum ID that is enabled
-    wire [TARGETS-1:0] EIP ;//Maximum ID that is enabled
-    wire [SOURCES-1:0] MAX_ID_DECODER [TARGETS-1:0];//Maximum ID that is enabled and complete
+    logic [REGLENGHT-1:0] MAX_ID_TARGETS [TARGETS-1:0];//Maximum ID that is enabled
+    logic [REGLENGHT-1:0] MAX_PR_TARGETS [TARGETS-1:0];//Maximum ID that is enabled
+    logic [TARGETS-1:0] EIP ;//Maximum ID that is enabled
+    logic [SOURCES-1:0] MAX_ID_DECODER [TARGETS-1:0];//Maximum ID that is enabled and complete
 
-    wire  [REGLENGHT-1:0] wire_to_check_ie;
-    assign wire_to_check_ie = IE[32];
+    logic  [REGLENGHT-1:0] logic_to_check_ie;
+    assign logic_to_check_ie = IE[32];
 
-    wire [REGLENGHT-1:0] diplay_IP_PR_IE [4-1:0];
+    logic [REGLENGHT-1:0] diplay_IP_PR_IE [4-1:0];
     assign diplay_IP_PR_IE[0] = IP_PR_IE[0][1];
     assign diplay_IP_PR_IE[1] = IP_PR_IE[1][1];
     assign diplay_IP_PR_IE[2] = IP_PR_IE[2][1];
     assign diplay_IP_PR_IE[3] = IP_PR_IE[3][1];
 
-    wire [REGLENGHT-1:0] diplay_MUX_SEL [4-1:0];
+    logic [REGLENGHT-1:0] diplay_MUX_SEL [4-1:0];
     assign diplay_MUX_SEL[0] = MUX_SEL[0][1];
     assign diplay_MUX_SEL[1] = MUX_SEL[1][1];
     assign diplay_MUX_SEL[2] = MUX_SEL[2][1];
     assign diplay_MUX_SEL[3] = MUX_SEL[3][1];
 
 
-    always @(posedge clk) begin
+    always_ff @(posedge clk) begin
         if (reset) begin
             wb_dat_o <= 0;
-            
-            // Initialize arrays to zero
-            for (integer i = 0; i < 32; i = i + 1) begin
-                IP[i] <= 0;
-            end
             for (integer i = 0; i < SOURCES; i = i + 1) begin
                 IPR[i] <= 0;
             end
             for (integer i = 0; i < IE_SOURCES; i = i + 1) begin
                 IE[i] <= 0;
-            end
-            for (integer i = 0; i < TARGETS; i = i + 1) begin
-                CLAIM_COMPLETE[i] <= 0;
-                THRESHOLD[i] <= 0;
             end
         end else begin
             if(state == ACCESS | state == ACCESS_DELAY) begin
@@ -160,9 +146,6 @@ module wishbone_plic_top #(
                                     wb_dat_o <= IPR[output_address];
                             end
                             3'b001: begin
-                                // if(wb_we)
-                                //     IP[output_address] <= wb_dat_i;
-                                // else
                                 if(~wb_we)
                                     wb_dat_o <= IP[output_address];
                             end
@@ -239,11 +222,8 @@ end
             assign MAX_PR_TARGETS[j] = MUX_PR[SOURCES-1][j];
             assign EIP[j] = MAX_PR_TARGETS[j] > THRESHOLD[j];
             assign ID[j] = MAX_ID_TARGETS[j];
-//            Decoder #(LOG_SOURCES,SOURCES) decoder_inst (
-//                .in(MAX_ID_TARGETS[LOG_SOURCES-1:0]),
-//                .out(MAX_ID_DECODER[j])
-//            );
-            always @(posedge clk) begin
+
+            always_ff @(posedge clk) begin
                 if (reset) begin
                     CLAIM_COMPLETE[j] <= 0;
                 end else begin
@@ -259,7 +239,7 @@ end
         for (i = 0; i < SOURCES; i = i + 1) begin : INTERRUPT_PENDING_GEN
             localparam int d = i/32;
             localparam int r = i%32;
-            always @(posedge clk) begin
+            always_ff @(posedge clk) begin
                 if (reset) begin
                     IP[d][r] <= 0;
                 end else begin
@@ -283,11 +263,11 @@ module AddressDecoder #(
     parameter PADDR_SIZE = 30, // Address bus size
     parameter NUM_MODE = 3 // Number of modules to decode
 ) (
-    input wire [PADDR_SIZE-1:0] address,
-    output wire [NUM_MODE-1:0] module_select,
-    output wire [19:0] output_address
+    input logic [PADDR_SIZE-1:0] address,
+    output logic [NUM_MODE-1:0] module_select,
+    output logic [19:0] output_address
 );
-    wire [19:0] real_address;
+    logic [19:0] real_address;
     assign real_address = address[19:0];
 
     assign module_select = (real_address <= 20'h003FF && real_address >= 20'h00000) ? 3'b000 :
@@ -306,24 +286,3 @@ module AddressDecoder #(
                             (module_select == 3'b100) ? ((real_address-20'h80000)/(20'h00400)) :
                             real_address;
 endmodule
-
-
-
-
-//module Decoder #(
-//  parameter EncodeWidth = 4,
-//  parameter DecodeWidth = 2 ** EncodeWidth
-//) (
-//  input  logic [EncodeWidth-1:0] in,
-//  output logic [DecodeWidth-1:0] out
-//);
-
-//  always_comb begin
-//    // Initialize all output bits to 0
-//    out = '0;
-
-//    // Set the corresponding decoded bit to 1
-//    out[in] = 1'b1;
-//  end
-
-//endmodule
